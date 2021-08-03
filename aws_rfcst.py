@@ -16,7 +16,6 @@ import aioboto3
 from botocore.client import Config
 import asyncclick as click
 import pygrib
-import cfgrib
 import spread_skill
 
 logging.basicConfig(filename='output.log', level=logging.WARNING)
