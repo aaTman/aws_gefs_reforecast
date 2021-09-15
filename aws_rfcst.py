@@ -91,7 +91,8 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             'filter_by_keys':{'dataType':datatype},
             'extra_coords':{"stepRange":"step"}
             },
-            chunks={'step':10}).isel(step=slice(int_step,None,2))   
+            chunks={'step':10}).isel(step=slice(int_step,None,2))
+    ds = ds.expand_dims('number')   
     if datatype == 'cf':
         ds = ds.sel(number=0)
     if ds['step'][0].values.astype('timedelta64[h]').astype(int) != hour_step:
@@ -103,11 +104,13 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
                 'extra_coords':{"stepRange":"step"}
                 },
                 chunks={'step':10}).isel(step=slice(int_step,None,2)) 
+        ds = ds.expand_dims('number') 
         if datatype == 'cf':
             ds = ds.sel(number=0)  
     return ds
 
 def combine_ensemble(fpath, output_file, selection_dict, final_path, stats, save_file):
+    import pdb; pdb.set_trace()
     if len_warning(fpath) < 5:
         logging.warning(f"{output_file} mean will be less than 5")
     logging.info(f"{output_file}")
