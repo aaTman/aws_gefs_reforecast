@@ -237,7 +237,7 @@ async def dl(fnames, selection_dict, final_path, obs_path, stats, client, save_f
                     future = client.submit(combine_ensemble, fpath, output_file, selection_dict, final_path, obs_path, stats, save_file)
                     result = await future
                 else: 
-                    combine_ensemble(fpath, output_file, selection_dict, final_path, stats, save_file)
+                    combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats, save_file)
                 
         return f"{s3_file} downloaded, data written, combined"
 
