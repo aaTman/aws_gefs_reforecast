@@ -102,7 +102,7 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
                 'filter_by_keys':{'dataType':datatype},
                 'extra_coords':{"stepRange":"step"}
                 },
-                chunks={'number':1,'step':10}).isel(step=slice(int_step,None,2)) 
+                chunks={'step':10}).isel(step=slice(int_step,None,2)) 
         if datatype == 'cf':
             ds = ds.sel(number=0)  
     return ds
