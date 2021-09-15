@@ -341,11 +341,6 @@ async def download_process_reforecast(
         client = await Client(asynchronous=True)
     else:
         client = None
-    try:    
-        obs_path = f'{obs_path}/{var_names}.nc'
-    except:
-        logging.fatal('multiple variables not set up yet, please use one at a time')
-        assert type(var_names) != list, 'break'
     logging.info(f'stats: {stats}')
     logging.info(f'dask: {dask}')
     source = 'https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/'
@@ -362,6 +357,13 @@ async def download_process_reforecast(
     s3_list_gen = (s3_list[i:i+5] for i in range(0, len(s3_list), 5))
     files_list = [n for n in s3_list_gen]
     stats = str_to_bool(stats)
+    if len(var_names) > 1 and stats:  
+        logging.fatal('multiple variables not set up yet, please use one at a time')
+        assert type(var_names) != list, 'break'
+    elif stats:
+        obs_path = f'{obs_path}/{var_names[0]}.nc'
+    else:
+        obs_path = None
     coro = [dl(files, selection_dict, final_path, obs_path, stats, client, save_file) for files in files_list]
     await gather_with_concurrency(semaphore, *coro)
     if dask:
