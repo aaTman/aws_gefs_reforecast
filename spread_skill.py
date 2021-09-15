@@ -15,16 +15,15 @@ def time_valid_errors(x, x_obs):
     return np.abs(x.msl - x_obs)
 
 class stats:
-    def __init__(self, ds, path, default_obs=True, save=True, run_all=True, crps_dim=[]):
+    def __init__(self, ds, path, obs_path, save=True, run_all=True, crps_dim=[]):
         self.ds = ds
         self.ds_var = [n for n in ds][0]
         self.comp = dict(zlib=True, complevel=5)
         if self.ds_var == 'tcc':
             self.ds/=100
         self.path = path
-        if default_obs:
-            self.set_obs_path(f'/home/taylorm/espr/analysis')
-            self.obs_var = [n for n in self.obs][0]
+        self.set_obs_path(obs_path)
+        self.obs_var = [n for n in self.obs][0]
         self.swap_time_dim()
         self.swap_obs_time_dim()
         valid_filter = self.obs_subset()

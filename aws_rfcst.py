@@ -113,14 +113,13 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
                 ds = ds.expand_dims('number')
     return ds
 
-def combine_ensemble(fpath, output_file, selection_dict, final_path, stats, save_file):
+def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats, save_file):
     import pdb; pdb.set_trace()
     if len_warning(fpath) < 5:
         logging.warning(f"{output_file} mean will be less than 5")
     logging.info(f"{output_file}")
     with open(f"{fpath}/{output_file}.grib2", 'w') as outfile:
         subprocess.run(['cat']+ glob.glob(fpath+'/*.grib2'), stdout=outfile)
-    ensemble = pygrib.open(f'{fpath}/{output_file}.grib2')
     cf = load_xr_with_datatype(fpath, output_file, 'cf')
     pf = load_xr_with_datatype(fpath, output_file, 'pf')
     ds = xr.concat([cf,pf],'number')
@@ -136,7 +135,7 @@ def combine_ensemble(fpath, output_file, selection_dict, final_path, stats, save
         ds_mean = ds.mean('number')
         ds_std = ds.std('number')
         if stats:
-            ss_stat = spread_skill.stats(ds,final_path)
+            ss_stat = spread_skill.stats(ds, final_path, obs_path)
         else:
             pass
         comp = dict(zlib=True, complevel=5)
@@ -206,7 +205,7 @@ async def gather_with_concurrency(n, *tasks):
             return await task
     return await asyncio.gather(*(sem_task(task) for task in tasks))
 
-async def dl(fnames, selection_dict, final_path, stats, client, save_file):
+async def dl(fnames, selection_dict, final_path, obs_path, stats, client, save_file):
 
     bucket = 'noaa-gefs-retrospective'
     filenames = [n.split('/')[-1] for n in fnames]
@@ -235,7 +234,7 @@ async def dl(fnames, selection_dict, final_path, stats, client, save_file):
                 pass
             else:
                 if client is not None:
-                    future = client.submit(combine_ensemble, fpath, output_file, selection_dict, final_path, stats, save_file)
+                    future = client.submit(combine_ensemble, fpath, output_file, selection_dict, final_path, obs_path, stats, save_file)
                     result = await future
                 else: 
                     combine_ensemble(fpath, output_file, selection_dict, final_path, stats, save_file)
@@ -285,6 +284,11 @@ async def dl(fnames, selection_dict, final_path, stats, client, save_file):
     help="Season to pull data from. djf, mam, jja, son.",
 )
 @click.option(
+    "--obs-path",
+    default='home/taylorm/espr/analysis/',
+    help="Where observation files are located.",
+)
+@click.option(
     "--final-path",
     default='home/taylorm/espr/reforecast_v12/test',
     help="Where to save final file to.",
@@ -322,6 +326,7 @@ async def download_process_reforecast(
     longitude_bounds,
     forecast_days,
     season,
+    obs_path,
     final_path,
     semaphore,
     rm,
@@ -336,6 +341,11 @@ async def download_process_reforecast(
         client = await Client(asynchronous=True)
     else:
         client = None
+    try:    
+        obs_path = f'{obs_path}/{var_names}.nc'
+    except:
+        logging.fatal('multiple variables not set up yet, please use one at a time')
+        assert type(var_names) != list, 'break'
     logging.info(f'stats: {stats}')
     logging.info(f'dask: {dask}')
     source = 'https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/'
@@ -352,7 +362,7 @@ async def download_process_reforecast(
     s3_list_gen = (s3_list[i:i+5] for i in range(0, len(s3_list), 5))
     files_list = [n for n in s3_list_gen]
     stats = str_to_bool(stats)
-    coro = [dl(files, selection_dict, final_path, stats, client, save_file) for files in files_list]
+    coro = [dl(files, selection_dict, final_path, obs_path, stats, client, save_file) for files in files_list]
     await gather_with_concurrency(semaphore, *coro)
     if dask:
         await client.close()
