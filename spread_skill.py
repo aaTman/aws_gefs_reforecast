@@ -74,9 +74,9 @@ class stats:
         self.obs_path = path
         if load:
             if dask:
-                self.obs = xr.open_dataset(f'{self.obs_path}/{self.ds_var}.nc',chunks='auto')
+                self.obs = xr.open_dataset(f'{self.obs_path}',chunks='auto')
             else:
-                self.obs = xr.open_dataset(f'{self.obs_path}/{self.ds_var}.nc')
+                self.obs = xr.open_dataset(f'{self.obs_path}')
 
     def obs_subset(self):
         if np.any(self.ds.longitude.values > 180):
