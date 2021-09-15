@@ -114,7 +114,6 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
     return ds
 
 def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats, save_file):
-    import pdb; pdb.set_trace()
     if len_warning(fpath) < 5:
         logging.warning(f"{output_file} mean will be less than 5")
     logging.info(f"{output_file}")
