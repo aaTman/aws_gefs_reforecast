@@ -92,9 +92,11 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             'extra_coords':{"stepRange":"step"}
             },
             chunks={'step':10}).isel(step=slice(int_step,None,2))
-    ds = ds.expand_dims('number')   
     if datatype == 'cf':
-        ds = ds.sel(number=0)
+        try:
+            ds = ds.sel(number=0)
+        except ValueError:
+            ds = ds.expand_dims('number')
     if ds['step'][0].values.astype('timedelta64[h]').astype(int) != hour_step:
         int_step = [n for n in int_steps if n != int_step][0]
         ds = xr.open_dataset(f'{fpath}/{output_file}.grib2',
@@ -104,9 +106,11 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
                 'extra_coords':{"stepRange":"step"}
                 },
                 chunks={'step':10}).isel(step=slice(int_step,None,2)) 
-        ds = ds.expand_dims('number') 
         if datatype == 'cf':
-            ds = ds.sel(number=0)  
+            try:
+                ds = ds.sel(number=0)
+            except ValueError:
+                ds = ds.expand_dims('number')
     return ds
 
 def combine_ensemble(fpath, output_file, selection_dict, final_path, stats, save_file):
