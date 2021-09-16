@@ -70,7 +70,7 @@ class stats:
         self.obs = self.obs.rename(({original_dim:new_dim}))
     
     def set_obs_path(self, path, load=True, dask=True):
-        self.analysis_dir = os.path.split(path)
+        self.analysis_dir = os.path.split(path)[0]
         if load:
             if dask:
                 self.obs = xr.open_dataset(f'{path}',chunks='auto')
