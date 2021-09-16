@@ -363,6 +363,10 @@ async def download_process_reforecast(
         obs_path = f'{obs_path}/{var_names[0]}.nc'
     else:
         obs_path = None
+    try:
+        os.mkdir(final_path)
+    except FileExistsError:
+        pass
     coro = [dl(files, selection_dict, final_path, obs_path, stats, client, save_file) for files in files_list]
     await gather_with_concurrency(semaphore, *coro)
     if dask:
@@ -370,7 +374,6 @@ async def download_process_reforecast(
     rm = str_to_bool(rm)
     if dask:
         client = Client()
-    [create_mclimate(final_path, wx_var, season, rm) for wx_var in var_names]
     if dask:
         client.shutdown()
 
