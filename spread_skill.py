@@ -23,6 +23,7 @@ class stats:
         if self.ds_var == 'tcc':
             self.ds/=100
         self.path = path
+        print(obs_path)
         self.set_obs_path(obs_path)
         self.obs_var = [n for n in self.obs][0]
         self.swap_time_dim()
@@ -71,6 +72,7 @@ class stats:
         self.obs = self.obs.rename(({original_dim:new_dim}))
     
     def set_obs_path(self, path, load=True, dask=True):
+        import pdb; pdb.set_trace
         self.obs_path = path
         if load:
             if dask:
