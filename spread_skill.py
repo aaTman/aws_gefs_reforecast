@@ -16,14 +16,12 @@ def time_valid_errors(x, x_obs):
 
 class stats:
     def __init__(self, ds, path, obs_path, save=True, run_all=True, crps_dim=[]):
-        print(obs_path)
         self.ds = ds
         self.ds_var = [n for n in ds][0]
         self.comp = dict(zlib=True, complevel=5)
         if self.ds_var == 'tcc':
             self.ds/=100
         self.path = path
-        print(obs_path)
         self.set_obs_path(obs_path)
         self.obs_var = [n for n in self.obs][0]
         self.swap_time_dim()
@@ -44,7 +42,7 @@ class stats:
                 stat_ds['me'] = self.mean_bias()
                 encoding= {var: self.comp for var in stat_ds.data_vars}
                 if save:
-                    stat_ds.to_netcdf(f"{self.obs_path}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}.nc",encoding=encoding)
+                    stat_ds.to_netcdf(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}.nc",encoding=encoding)
 
     def swap_time_dim(self,original_dim='step',new_dim='valid_time'):
         try:
@@ -72,13 +70,12 @@ class stats:
         self.obs = self.obs.rename(({original_dim:new_dim}))
     
     def set_obs_path(self, path, load=True, dask=True):
-        import pdb; pdb.set_trace
-        self.obs_path = path
+        self.analysis_dir = os.path.split(path)
         if load:
             if dask:
-                self.obs = xr.open_dataset(f'{self.obs_path}',chunks='auto')
+                self.obs = xr.open_dataset(f'{path}',chunks='auto')
             else:
-                self.obs = xr.open_dataset(f'{self.obs_path}')
+                self.obs = xr.open_dataset(f'{path}')
 
     def obs_subset(self):
         if np.any(self.ds.longitude.values > 180):
@@ -114,8 +111,8 @@ class stats:
         return np.mean(self.obs[self.obs_var]-self.ds[self.ds_var])
     
     def valid_sample_space(self, dim='number', save=True):
-        if os.path.exists(f"{self.obs_path}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}"):
-            logging.error(f"{self.obs_path}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))} exists, skipping")
+        if os.path.exists(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}"):
+            logging.error(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))} exists, skipping")
             pass
         else:
             valid_grid = xr.ufuncs.logical_and(self.obs[self.obs_var]<=self.ds[self.ds_var].max(dim='number'),self.obs[self.obs_var]>=self.ds[self.ds_var].min(dim='number'))
@@ -126,7 +123,7 @@ class stats:
                 encoding= {var: self.comp for var in valid_grid.data_vars}
             if save:
                 try:
-                    valid_grid.to_netcdf(f"{self.obs_path}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}",encoding=encoding)
+                    valid_grid.to_netcdf(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}",encoding=encoding)
                 except OSError as e:
                     logging.error(e)
                     pass

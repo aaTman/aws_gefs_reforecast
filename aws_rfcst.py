@@ -360,7 +360,7 @@ async def download_process_reforecast(
         logging.fatal('multiple variables not set up yet, please use one at a time')
         assert type(var_names) != list, 'break'
     elif stats:
-        obs_path = f'{obs_path}/{var_names[0]}.nc'
+        obs_path = f'{obs_path}{var_names[0]}.nc'
     else:
         obs_path = None
     try:
