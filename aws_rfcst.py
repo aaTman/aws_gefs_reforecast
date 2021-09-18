@@ -92,6 +92,7 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             'extra_coords':{"stepRange":"step"}
             },
             chunks={'step':10}).isel(step=slice(int_step,None,2))
+    import pdb; pdb.set_trace()
     if datatype == 'cf':
         try:
             ds = ds.sel(number=0)
