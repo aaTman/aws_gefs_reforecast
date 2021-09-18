@@ -84,6 +84,7 @@ def file_check(final_path, output_file):
         return False
 
 def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6):
+    import pdb; pdb.set_trace()
     int_steps = [0, 1]
     ds = xr.open_dataset(f'{fpath}/{output_file}.grib2',
         engine='cfgrib',
@@ -92,7 +93,6 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             'extra_coords':{"stepRange":"step"}
             },
             chunks={'step':10}).isel(step=slice(int_step,None,2))
-    import pdb; pdb.set_trace()
     if datatype == 'cf':
         try:
             ds = ds.sel(number=0)
@@ -120,6 +120,7 @@ def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, s
     logging.info(f"{output_file}")
     with open(f"{fpath}/{output_file}.grib2", 'w') as outfile:
         subprocess.run(['cat']+ glob.glob(fpath+'/*.grib2'), stdout=outfile)
+    import pdb; pdb.set_trace()
     cf = load_xr_with_datatype(fpath, output_file, 'cf')
     pf = load_xr_with_datatype(fpath, output_file, 'pf')
     ds = xr.concat([cf,pf],'number')
