@@ -23,6 +23,7 @@ class stats:
             self.ds/=100
         self.path = path
         self.set_obs_path(obs_path)
+        self.load_obs(obs_path)
         self.obs_var = [n for n in self.obs][0]
         self.swap_time_dim()
         self.swap_obs_time_dim()
@@ -69,21 +70,23 @@ class stats:
     def swap_obs_time_dim(self,original_dim='time',new_dim='valid_time'):
         self.obs = self.obs.rename(({original_dim:new_dim}))
     
-    def set_obs_path(self, path, load=True, dask=True):
+    def set_obs_path(self, path):
         self.analysis_dir = os.path.split(path)[0]
-        if load:
-            if dask:
-                self.obs = xr.open_dataset(f'{path}',chunks='auto')
-            else:
-                self.obs = xr.open_dataset(f'{path}')
 
+    def load_obs(self, obs_path, dask=True):    
+        if dask:
+            self.obs = xr.open_dataset(f'{obs_path}',chunks='auto')
+        else:
+            self.obs = xr.open_dataset(f'{obs_path}')
+            
     def obs_subset(self):
         if np.any(self.ds.longitude.values > 180):
-            self.ds['longitude'] = (self.ds['longitude'] + 180) % 360 - 180
+            if np.any(self.obs.longitude.values > 180):
+                pass
+            else:
+                self.ds['longitude'] = (self.ds['longitude'] + 180) % 360 - 180
         try:
-            self.obs = self.obs.where(self.obs['valid_time'].isin([self.ds['valid_time']]),drop=True)\
-                .where(self.obs['latitude'].isin([self.ds['latitude']]),drop=True)\
-                    .where(self.obs['longitude'].isin([self.ds['longitude']]),drop=True)
+            self.obs = self.obs.where(self.obs['valid_time'].isin([self.ds['valid_time']]),drop=True).where(self.obs['latitude'].isin([self.ds['latitude']]),drop=True).where(self.obs['longitude'].isin([self.ds['longitude']]),drop=True)
             return True
         except OverflowError as e:
             logging.error(e)
