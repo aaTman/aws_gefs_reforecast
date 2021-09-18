@@ -15,7 +15,6 @@ def time_valid_errors(x, x_obs):
 
 class stats:
     def __init__(self, ds, path, obs_path, save=True, run_all=True, crps_dim=[]):
-        import pdb; pdb.set_trace()
         self.ds = ds
         self.ds_var = [n for n in ds][0]
         self.comp = dict(zlib=True, complevel=5)
