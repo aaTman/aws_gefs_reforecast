@@ -61,9 +61,7 @@ class stats:
         'longitude':len(self.ds['longitude']),
         'number':len(self.ds['number']),
         'valid_time':1})
-        in_obs = self.obs[self.obs_var].chunk({'latitude':len(self.ds['latitude']),
-        'longitude':len(self.ds['longitude']),
-        'valid_time':1})
+        in_obs = self.obs[self.obs_var].chunk({'latitude':len(self.ds['latitude']), 'longitude':len(self.ds['longitude']), 'valid_time':1})
         return xskillscore.crps_ensemble(in_obs, in_fcst, member_dim='number', dim=dim)
 
 
@@ -96,7 +94,10 @@ class stats:
 
     def fcst_subset(self):
         if np.any(self.ds.longitude.values > 180):
-            self.ds['longitude'] = (self.ds['longitude'] + 180) % 360 - 180
+            if np.any(self.obs.longitude.values > 180):
+                pass
+            else:
+                self.ds['longitude'] = (self.ds['longitude'] + 180) % 360 - 180
         try:
             self.ds = self.ds.where(self.ds['valid_time'].isin([self.obs['valid_time']]),drop=True)\
                 .where(self.ds['latitude'].isin([self.obs['latitude']]),drop=True)\
