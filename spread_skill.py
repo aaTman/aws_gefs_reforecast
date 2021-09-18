@@ -4,7 +4,6 @@ import numpy as np
 import os 
 import logging
 import xskillscore
-logging.basicConfig(filename='output_spread_skill.log', level=logging.WARNING)
 
 def xarr_std(x):
     return (x - x.mean()) / x.std()
