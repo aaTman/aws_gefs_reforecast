@@ -35,6 +35,7 @@ class stats:
         if run_all:
             if valid_filter:
                 stat_ds = self.valid_sample_space(save=False)
+                import pdb; pdb.set_trace()
                 try:
                     stat_ds['crps_ens'] = self.crps_ensemble(crps_dim)
                 except ValueError as e:
@@ -42,7 +43,7 @@ class stats:
                 stat_ds['me'] = self.mean_bias()
                 encoding= {var: self.comp for var in stat_ds.data_vars}
                 if save:
-                    import pdb; pdb.set_trace()
+                    
                     stat_ds.to_netcdf(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}.nc",encoding=encoding)
 
     def swap_time_dim(self,original_dim='step',new_dim='valid_time'):
