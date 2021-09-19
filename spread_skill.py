@@ -17,7 +17,6 @@ class stats:
     def __init__(self, ds, path, obs_path, save=True, run_all=True, crps_dim=[]):
         
         self.ds = ds
-        import pdb; pdb.set_trace()
         self.ds_var = [n for n in ds][0]
         self.comp = dict(zlib=True, complevel=5)
         if self.ds_var == 'tcc':

@@ -122,7 +122,6 @@ def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, s
     logging.info(f"{output_file}")
     with open(f"{fpath}/{output_file}.grib2", 'w') as outfile:
         subprocess.run(['cat']+ glob.glob(fpath+'/*.grib2'), stdout=outfile)
-    import pdb; pdb.set_trace()
     cf = load_xr_with_datatype(fpath, output_file, 'cf')
     pf = load_xr_with_datatype(fpath, output_file, 'pf')
     chunk_dict = {n: len(pf[n]) for n in pf.dims}
