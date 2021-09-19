@@ -90,7 +90,7 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
         backend_kwargs={
             'filter_by_keys':{'dataType':datatype},
             },
-            chunks={'step':10}).isel(step=slice(int_step,None,2))
+            chunks={'step':10})
     ds.attrs = {}
     
     if datatype == 'cf':
@@ -105,7 +105,7 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             backend_kwargs={
                 'filter_by_keys':{'dataType':datatype},
                 },
-                chunks={'step':10}).isel(step=slice(int_step,None,2)) 
+                chunks={'step':10}) 
         if datatype == 'cf':
             try:
                 ds = ds.sel(number=0)
