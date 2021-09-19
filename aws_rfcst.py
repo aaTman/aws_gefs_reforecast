@@ -85,7 +85,6 @@ def file_check(final_path, output_file):
 
 def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6):
     int_steps = [0, 1]
-    import pdb; pdb.set_trace()
     ds = xr.open_dataset(f'{fpath}/{output_file}.grib2',
         engine='cfgrib',
         backend_kwargs={
@@ -97,7 +96,7 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
     if datatype == 'cf':
         try:
             ds = ds.sel(number=0)
-        except ValueError:
+        except (ValueError, KeyError) as e:
             pass
     if ds['step'][0].values.astype('timedelta64[h]').astype(int) != hour_step:
         int_step = [n for n in int_steps if n != int_step][0]
@@ -110,7 +109,7 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
         if datatype == 'cf':
             try:
                 ds = ds.sel(number=0)
-            except ValueError:
+            except (ValueError, KeyError) as e:
                 pass
     for n in ds.coords:
         if ds[n].chunks:
