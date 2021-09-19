@@ -89,7 +89,6 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
         engine='cfgrib',
         backend_kwargs={
             'filter_by_keys':{'dataType':datatype},
-            
             },
             chunks={'step':10}).isel(step=slice(int_step,None,2))
     ds.attrs = {}
@@ -105,7 +104,6 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             engine='cfgrib',
             backend_kwargs={
                 'filter_by_keys':{'dataType':datatype},
-                
                 },
                 chunks={'step':10}).isel(step=slice(int_step,None,2)) 
         if datatype == 'cf':
