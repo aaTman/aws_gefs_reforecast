@@ -113,7 +113,9 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
                 ds = ds.sel(number=0)
             except ValueError:
                 pass
-    ds.coords = [ds[n].values for n in ds.coords if ds[n].chunks is not None]
+    for n in ds.coords:
+        if ds[n].chunks:
+            ds[n] = ds[n].values
     return ds
 
 def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats, save_file):
