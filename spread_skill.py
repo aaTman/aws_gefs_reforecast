@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 from logging import error
 import xarray as xr
 import numpy as np

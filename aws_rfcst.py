@@ -223,6 +223,7 @@ async def dl(fnames, selection_dict, final_path, obs_path, stats_path, stats, cl
                 else:
                     try:
                         filename = s3_file.split('/')[-1]
+                        import pdb; pdb.set_trace()
                         await s3.meta.client.download_file(bucket, s3_file, f"{fpath}/{filename}")
                         logging.info(f'{s3_file} read success!')
                     except FileNotFoundError as e:
