@@ -14,7 +14,7 @@ def time_valid_errors(x, x_obs):
     return np.abs(x.msl - x_obs)
 
 class stats:
-    def __init__(self, ds, path, obs_path, save=True, run_all=True, crps_dim=[]):
+    def __init__(self, ds, path, obs_path, stats_path, save=True, run_all=True, crps_dim=[]):
         
         self.ds = ds
         self.ds_var = [n for n in ds][0]
@@ -23,8 +23,9 @@ class stats:
             self.ds/=100
         self.path = path
         self.set_obs_path(obs_path)
-        if os.path.exists(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}"):
-            logging.error(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))} exists, skipping")
+        self.stats_path = f'{stats_path}{self.ds_var}'
+        if os.path.exists(f"{self.stats_path}/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}"):
+            logging.error(f"{self.stats_path}/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))} exists, skipping")
             pass
         else:
             self.load_obs(obs_path)
@@ -39,7 +40,7 @@ class stats:
             _ = self.fcst_subset()
             if run_all:
                 if valid_filter:
-                    stat_ds = self.valid_sample_space(save=False)
+                    stat_ds = self.valid_sample_space()
                     try:
                         stat_ds['crps_ens'] = self.crps_ensemble(crps_dim)
                     except ValueError as e:
@@ -47,8 +48,11 @@ class stats:
                     stat_ds['me'] = self.mean_bias()
                     encoding= {var: self.comp for var in stat_ds.data_vars}
                     if save:
-                        
-                        stat_ds.to_netcdf(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}.nc",encoding=encoding)
+                        try:
+                            stat_ds.to_netcdf(f"{self.stats_path}/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}.nc",encoding=encoding)
+                        except OSError as e:
+                            logging.error(e)
+                            pass
 
     def swap_time_dim(self,original_dim='step',new_dim='valid_time'):
         try:
@@ -116,20 +120,12 @@ class stats:
     def mean_bias(self):
         return (self.ds[self.ds_var]-self.obs[self.obs_var]).mean('number')
     
-    def valid_sample_space(self, dim='number', save=True):
+    def valid_sample_space(self):
 
         valid_grid = xr.ufuncs.logical_and(self.obs[self.obs_var]<=self.ds[self.ds_var].max(dim='number'),self.obs[self.obs_var]>=self.ds[self.ds_var].min(dim='number'))
         try:
             encoding= {var: self.comp for var in valid_grid.data_vars}
         except AttributeError:
-            valid_grid = valid_grid.to_dataset(name=f'{[n for n in self.ds.data_vars][0]}_vss')
+            valid_grid = valid_grid.to_dataset(name=f'{self.ds_var}_vss')
             encoding= {var: self.comp for var in valid_grid.data_vars}
-        if save:
-            try:
-                valid_grid.to_netcdf(f"{self.analysis_dir}/stats/vss_{self.ds_var}_{str(self.ds['time'].values.astype('datetime64[D]'))}",encoding=encoding)
-            except OSError as e:
-                logging.error(e)
-                pass
-
-        else:
-            return valid_grid
+        return valid_grid

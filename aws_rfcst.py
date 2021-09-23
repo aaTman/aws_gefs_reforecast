@@ -116,7 +116,7 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             ds[n] = ds[n].values
     return ds
 
-def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats, save_file):
+def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats_path, stats, save_file):
     if len_warning(fpath) < 5:
         logging.warning(f"{output_file} mean will be less than 5")
     logging.info(f"{output_file}")
@@ -138,7 +138,7 @@ def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, s
         ds_mean = ds.mean('number')
         ds_std = ds.std('number')
         if stats:
-            ss_stat = spread_skill.stats(ds, final_path, obs_path)
+            ss_stat = spread_skill.stats(ds, final_path, obs_path, stats_path)
         else:
             pass
         comp = dict(zlib=True, complevel=5)
@@ -208,7 +208,7 @@ async def gather_with_concurrency(n, *tasks):
             return await task
     return await asyncio.gather(*(sem_task(task) for task in tasks))
 
-async def dl(fnames, selection_dict, final_path, obs_path, stats, client, save_file):
+async def dl(fnames, selection_dict, final_path, obs_path, stats_path, stats, client, save_file):
 
     bucket = 'noaa-gefs-retrospective'
     filenames = [n.split('/')[-1] for n in fnames]
@@ -237,10 +237,10 @@ async def dl(fnames, selection_dict, final_path, obs_path, stats, client, save_f
                 pass
             else:
                 if client is not None:
-                    future = client.submit(combine_ensemble, fpath, output_file, selection_dict, final_path, obs_path, stats, save_file)
+                    future = client.submit(combine_ensemble, fpath, output_file, selection_dict, final_path, obs_path, stats_path, stats, save_file)
                     result = await future
                 else: 
-                    combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats, save_file)
+                    combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats_path, stats, save_file)
                 
         return f"{s3_file} downloaded, data written, combined"
 
@@ -288,13 +288,18 @@ async def dl(fnames, selection_dict, final_path, obs_path, stats, client, save_f
 )
 @click.option(
     "--obs-path",
-    default='home/taylorm/espr/analysis/',
+    default='~/obs/',
     help="Where observation files are located.",
 )
 @click.option(
     "--final-path",
-    default='home/taylorm/espr/reforecast_v12/test',
+    default='~/gefsv12_reforecast/',
     help="Where to save final file to.",
+)
+@click.option(
+    "--stats-path",
+    default='~/gefsv12_reforecast_stats',
+    help="Where to save stats to.",
 )
 @click.option(
     '--semaphore',
@@ -331,6 +336,7 @@ async def download_process_reforecast(
     season,
     obs_path,
     final_path,
+    stats_path,
     semaphore,
     rm,
     stats,
@@ -371,7 +377,7 @@ async def download_process_reforecast(
         os.mkdir(final_path)
     except FileExistsError:
         pass
-    coro = [dl(files, selection_dict, final_path, obs_path, stats, client, save_file) for files in files_list]
+    coro = [dl(files, selection_dict, final_path, obs_path, stats_path, stats, client, save_file) for files in files_list]
     await gather_with_concurrency(semaphore, *coro)
     if dask:
         await client.close()
