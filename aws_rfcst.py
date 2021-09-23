@@ -293,12 +293,12 @@ async def dl(fnames, selection_dict, final_path, obs_path, stats_path, stats, cl
 )
 @click.option(
     "--obs-path",
-    default='~/obs/',
+    default='~/obs',
     help="Where observation files are located.",
 )
 @click.option(
     "--final-path",
-    default='~/gefsv12_reforecast/',
+    default='~/gefsv12_reforecast',
     help="Where to save final file to.",
 )
 @click.option(
@@ -351,7 +351,6 @@ async def download_process_reforecast(
 
     dask = str_to_bool(dask)
     save_file = str_to_bool(save_file)
-    import pdb; pdb.set_trace()
     if dask:
         cluster = LocalCluster(n_workers=8,threads_per_worker=2,dashboard_address=':1392')
         client = await Client(cluster, asynchronous=True)
