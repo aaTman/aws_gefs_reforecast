@@ -13,6 +13,7 @@ import xarray as xr
 import aiobotocore
 import aiofiles
 import aioboto3
+import botocore.exceptions as exceptions
 from botocore.client import Config
 import asyncclick as click
 import pygrib
@@ -223,9 +224,12 @@ async def dl(fnames, selection_dict, final_path, obs_path, stats_path, stats, cl
                 else:
                     try:
                         filename = s3_file.split('/')[-1]
-                        import pdb; pdb.set_trace()
-                        await s3.meta.client.download_file(bucket, s3_file, f"{fpath}/{filename}")
-                        logging.info(f'{s3_file} read success!')
+                        try:
+                            await s3.meta.client.download_file(bucket, s3_file, f"{fpath}/{filename}")
+                            logging.info(f'{s3_file} read success!')
+                        except exceptions.ClientError as e:
+                            logging.fatal('file not found in s3, likely incorrect variable name')
+
                     except FileNotFoundError as e:
                         logging.warning(f"{filename} not downloaded, not found")
                         logging.info(e)
