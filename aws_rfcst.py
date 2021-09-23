@@ -352,7 +352,7 @@ async def download_process_reforecast(
     dask = str_to_bool(dask)
     save_file = str_to_bool(save_file)
     if dask:
-        client = await Client(asynchronous=True)
+        client = await Client('127.0.0.1:8786', asynchronous=True)
     else:
         client = None
     logging.info(f'stats: {stats}')
