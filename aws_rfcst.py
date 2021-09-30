@@ -338,7 +338,7 @@ async def download_process_reforecast(
     dask = str_to_bool(dask)
     save_file = str_to_bool(save_file)
     if dask:
-        cluster = LocalCluster(n_workers=4,threads_per_worker=1,dashboard_address=':1392')
+        cluster = LocalCluster(n_workers=4,threads_per_worker=2,dashboard_address=':1392')
         client = await Client(cluster, asynchronous=True)
     else:
         client = None
