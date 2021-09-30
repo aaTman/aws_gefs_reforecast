@@ -106,16 +106,24 @@ def load_xr_with_datatype(fpath, output_file, datatype, int_step=1, hour_step=6)
             backend_kwargs={
                 'filter_by_keys':{'dataType':datatype},
                 },
-                chunks={'step':10}) 
+                chunks={'step':10})
         if datatype == 'cf':
             try:
                 ds = ds.sel(number=0)
             except (ValueError, KeyError) as e:
                 pass
-    for n in ds.coords:
-        if ds[n].chunks:
-            ds[n] = ds[n].values
     return ds
+
+def align_cf_pf(cf, pf, fpath):
+    pf_var = [n for n in pf.data_vars][0]
+    cf_var = [n for n in cf.data_vars][0]
+    pf = pf[pf_var].where(pf['step'].isin([cf['step']]),drop=True)
+    cf = cf[cf_var].where(cf['step'].isin([pf['step']]),drop=True)
+    pf.to_netcdf(f'{fpath}/pf.nc')
+    cf.to_netcdf(f'{fpath}/cf.nc')
+    pf = xr.open_dataset(f'{fpath}/pf.nc')
+    cf = xr.open_dataset(f'{fpath}/cf.nc')
+    return cf, pf
 
 def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, stats_path, stats, save_file):
     if len_warning(fpath) < 5:
@@ -126,20 +134,26 @@ def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, s
     cf = load_xr_with_datatype(fpath, output_file, 'cf')
     pf = load_xr_with_datatype(fpath, output_file, 'pf')
     chunk_dict = {n: len(pf[n]) for n in pf.dims}
+    
+    cf, pf = align_cf_pf(cf, pf, fpath)
     ds = xr.concat([cf,pf],'number').chunk(chunk_dict)
-    ds = ds.sel(selection_dict)
-    if ds.step.shape[0] > 28:
-        cf = load_xr_with_datatype(fpath, output_file, 'cf')
-        pf = load_xr_with_datatype(fpath, output_file, 'pf')
-        ds = xr.concat([cf,pf],'number')
+    
+    if len(ds['valid_time'].shape) > 1:
+        ds['valid_time'] = ds['time'] + ds['step']
+    ds_subset = ds.sel(selection_dict)
+    # if ds_subset.step.shape[0] > 28:
+    #     cf = load_xr_with_datatype(fpath, output_file, 'cf')
+    #     pf = load_xr_with_datatype(fpath, output_file, 'pf')
+    #     ds = xr.concat([cf,pf],'number').chunk(chunk_dict)
     if len(ds['valid_time'].shape) > 1:
         logging.error(f'error with cf members, skipping date {output_file}')
         pass
     else:
-        ds_mean = ds.mean('number')
-        ds_std = ds.std('number')
+        ds_mean = ds_subset.mean('number')
+        ds_std = ds_subset.std('number')
         if stats:
-            ss_stat = spread_skill.stats(ds, final_path, obs_path, stats_path)
+            
+            ss_stat = spread_skill.stats(ds_subset, final_path, obs_path, stats_path)
         else:
             pass
         comp = dict(zlib=True, complevel=5)
@@ -156,34 +170,6 @@ def obj_to_str(ds):
         if ds[n].dtype == 'O':
             ds[n] = ds[n].astype(str)
     return ds
-
-def create_mclimate(final_path, wx_var, season, rm):
-    final_file_mean = f"{final_path}/{wx_var}_mean_{season}.nc"
-    final_file_std = f"{final_path}/{wx_var}_std_{season}.nc"
-    ds_mean = xr.open_mfdataset(f"{final_path}/{wx_var}*mean.nc",
-                            combine='nested',
-                            concat_dim='date',
-                            coords='minimal',
-                            compat='override'
-                            )
-    ds_std = xr.open_mfdataset(f"{final_path}/{wx_var}*std.nc",
-                            combine='nested',
-                            concat_dim='date',
-                            coords='minimal',
-                            compat='override'
-                            )
-    ds_mean = obj_to_str(ds_mean)
-    ds_std = obj_to_str(ds_std)
-    comp = dict(zlib=True, complevel=5)
-    encoding_mean = {var: comp for var in ds_mean.data_vars}
-    encoding_std = {var: comp for var in ds_std.data_vars}
-    ds_mean.to_netcdf(final_file_mean, encoding=encoding_mean,engine='netcdf4')
-    ds_std.to_netcdf(final_file_std,encoding=encoding_std,engine='netcdf4')
-    logging.info(f"{wx_var} mean and spread for {season} generated.")
-    logging.info(f"{wx_var} mean and spread for {season} generated.")
-    if rm:
-        rm_files(final_path, wx_var)
-
 
 def str_to_bool(s):
     if s in ['y','yes','ye']:
