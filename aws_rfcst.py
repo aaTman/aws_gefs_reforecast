@@ -18,6 +18,7 @@ from botocore.client import Config
 import asyncclick as click
 import pygrib
 import spread_skill
+import numpy as np
 
 logging.basicConfig(filename='output.log', level=logging.WARNING)
 
@@ -137,7 +138,6 @@ def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, s
     
     cf, pf = align_cf_pf(cf, pf, fpath)
     ds = xr.concat([cf,pf],'number').chunk(chunk_dict)
-    
     if len(ds['valid_time'].shape) > 1:
         ds['valid_time'] = ds['time'] + ds['step']
     ds_subset = ds.sel(selection_dict)
@@ -147,23 +147,25 @@ def combine_ensemble(fpath, output_file, selection_dict, final_path, obs_path, s
     #     ds = xr.concat([cf,pf],'number').chunk(chunk_dict)
     if len(ds['valid_time'].shape) > 1:
         logging.error(f'error with cf members, skipping date {output_file}')
-        pass
     else:
         ds_mean = ds_subset.mean('number')
         ds_std = ds_subset.std('number')
-        if stats:
-            
-            ss_stat = spread_skill.stats(ds_subset, final_path, obs_path, stats_path)
+        if xr.ufuncs.isnan(ds_mean[[n for n in ds_mean.data_vars][0]]).sum() > np.product(list(ds_mean[[n for n in ds_mean.data_vars][0]].shape))/10:
+            logging.error(f'large number of nans (over 10%), skipping date {output_file}')
+            import pdb; pdb.set_trace()
         else:
-            pass
-        comp = dict(zlib=True, complevel=5)
-        encoding_mean = {var: comp for var in ds_mean.data_vars}
-        encoding_std = {var: comp for var in ds_std.data_vars}
-        if save_file:
-            ds_mean.to_netcdf(f"{final_path}/{output_file}_mean.nc",encoding=encoding_mean,engine='netcdf4')
-            ds_std.to_netcdf(f"{final_path}/{output_file}_std.nc",encoding=encoding_std,engine='netcdf4')
-        logging.info(f"{output_file} complete")
-        logging.info(f"{output_file} complete")
+            if stats:
+                ss_stat = spread_skill.stats(ds_subset, final_path, obs_path, stats_path)
+            else:
+                pass
+            comp = dict(zlib=True, complevel=5)
+            encoding_mean = {var: comp for var in ds_mean.data_vars}
+            encoding_std = {var: comp for var in ds_std.data_vars}
+            if save_file:
+                ds_mean.to_netcdf(f"{final_path}/{output_file}_mean.nc",encoding=encoding_mean,engine='netcdf4')
+                ds_std.to_netcdf(f"{final_path}/{output_file}_std.nc",encoding=encoding_std,engine='netcdf4')
+            logging.info(f"{output_file} complete")
+            logging.info(f"{output_file} complete")
 
 def obj_to_str(ds):
     for n in ds.coords:
@@ -318,6 +320,17 @@ async def dl(fnames, selection_dict, final_path, obs_path, stats_path, stats, cl
     default='y',
     help='Saves mean and spread files, defaults to y'
 )
+@click.option(
+    '-w',
+    '--workers',
+    default=4,
+    help='how many workers, if dask is used'
+)
+@click.option(
+   '--threads',
+    default=2,
+    help='how many threads, if dask is used'
+)
 async def download_process_reforecast(
     var_names,
     pressure_levels,
@@ -332,14 +345,16 @@ async def download_process_reforecast(
     rm,
     stats,
     dask,
-    save_file):
+    save_file,
+    workers,
+    threads):
     assert len(pressure_levels) == 0, 'pressure levels not set up yet'
 
     dask = str_to_bool(dask)
     save_file = str_to_bool(save_file)
     if dask:
-        cluster = LocalCluster(n_workers=4,threads_per_worker=2,dashboard_address=':1392')
-        client = await Client(cluster, asynchronous=True)
+        cluster = LocalCluster(workers=workers, threads=threads, dashboard_address=':1392')
+        client = await Client(asynchronous=True)
     else:
         client = None
     logging.info(f'stats: {stats}')
