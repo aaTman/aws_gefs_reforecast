@@ -389,10 +389,6 @@ async def download_process_reforecast(
     if dask:
         await client.close()
     rm = str_to_bool(rm)
-    if dask:
-        client = Client()
-    if dask:
-        client.shutdown()
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
